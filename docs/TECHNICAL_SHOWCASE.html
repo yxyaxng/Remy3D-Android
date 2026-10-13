@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remy3D 核心算法原理与工程技术问答 (Q&amp;A)</title>
+  <style>
+    :root {
+      --bg: #f2f5f9;
+      --card-bg: #ffffff;
+      --dark-showcase: #06101e;
+      --accent: #4f5bff;
+      --accent-soft: rgba(79, 91, 255, 0.1);
+      --cyan: #0095b6;
+      --green: #0fa968;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --text-pri: #0f172a;
+      --text-sec: #475569;
+      --muted: #64748b;
+      --border: #dce3ed;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-pri);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.9rem;
+      padding: 6px 12px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-pri);
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--bg);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-sec);
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(79, 91, 255, 0.25);
+    }
+
+    .workspace {
+      display: flex;
+      flex: 1;
+      max-width: 1480px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 24px;
+      gap: 22px;
+    }
+
+    aside {
+      width: 290px;
+      flex-shrink: 0;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      height: calc(100vh - 105px);
+      position: sticky;
+      top: 82px;
+      overflow-y: auto;
+    }
+
+    .nav-group-title {
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 10px 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--text-sec);
+      cursor: pointer;
+      transition: all 0.15s;
+      margin-bottom: 3px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--bg);
+      color: var(--text-pri);
+    }
+
+    .nav-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 700;
+      border-color: rgba(79, 91, 255, 0.25);
+    }
+
+    .nav-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.74rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .nav-item.active .nav-num {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    main {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .topic-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .topic-card.active {
+      display: block;
+    }
+
+    body.overview-mode .topic-card {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card-title-wrap h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--text-pri);
+      margin-bottom: 6px;
+    }
+
+    .card-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-sec);
+    }
+
+    .badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(79, 91, 255, 0.2);
+    }
+
+    .badge-qa {
+      background: rgba(15, 169, 104, 0.1);
+      color: var(--green);
+      border-color: rgba(15, 169, 104, 0.25);
+    }
+
+    .summary-box {
+      background: linear-gradient(135deg, rgba(79, 91, 255, 0.07), rgba(0, 149, 182, 0.07));
+      border: 1px solid rgba(79, 91, 255, 0.28);
+      border-left: 5px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 22px;
+    }
+
+    .summary-label {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-text {
+      font-size: 0.95rem;
+      color: var(--text-pri);
+      font-weight: 500;
+      line-height: 1.65;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .sub-panel {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+
+    .sub-panel h3 {
+      font-size: 1rem;
+      color: var(--text-pri);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sub-panel p, .sub-panel li {
+      font-size: 0.88rem;
+      color: var(--text-sec);
+      line-height: 1.6;
+    }
+
+    .sub-panel ul, .sub-panel ol {
+      margin-left: 18px;
+    }
+
+    .sub-panel li {
+      margin-bottom: 5px;
+    }
+
+    .dark-box {
+      background: var(--dark-showcase);
+      color: #f0f4ff;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      margin: 10px 0;
+      overflow-x: auto;
+      border: 1px solid #1e293b;
+    }
+
+    .dark-box .comment {
+      color: #64748b;
+    }
+
+    .dark-box .hl {
+      color: #38bdf8;
+      font-weight: 600;
+    }
+
+    .dark-box .math {
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      margin: 12px 0;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    th, td {
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg);
+      color: var(--text-pri);
+      font-weight: 700;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .demo-gif-card {
+      background: var(--dark-showcase);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      color: #f0f4ff;
+      border: 1px solid #1e293b;
+    }
+
+    .demo-gif-card img {
+      width: 100%;
+      max-width: 240px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      margin-bottom: 10px;
+    }
+
+    .demo-gif-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+      color: #fff;
+    }
+
+    .demo-gif-card p {
+      font-size: 0.78rem;
+      color: #b0bccf;
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .nav-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-pri);
+      padding: 8px 18px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .file-ref {
+      display: inline-block;
+      background: rgba(0, 149, 182, 0.1);
+      color: var(--cyan);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-family: ui-monospace, monospace;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">Remy3D</span>
+      <span class="brand-title">核心算法原理与工程技术问答 (Q&amp;A)</span>
+      <span class="brand-sub">支持键盘 ← / → 翻页浏览</span>
+    </div>
+    <div class="mode-tabs">
+      <button class="mode-btn active" id="btn-slide-mode" onclick="setMode('slide')">🎯 分布浏览模式</button>
+      <button class="mode-btn" id="btn-overview-mode" onclick="setMode('overview')">📜 全文通览模式</button>
+    </div>
+  </header>
+
+  <div class="workspace">
+    <!-- 左侧导航目录 -->
+    <aside id="sidebar">
+      <div class="nav-group-title">实机演示与概览</div>
+      <div class="nav-item active" onclick="goToCard(0)">
+        <span class="nav-num">01</span>
+        <span>三大实机运行 GIF 演示</span>
+      </div>
+
+      <div class="nav-group-title" style="margin-top: 10px;">第一部分：核心算法原理</div>
+      <div class="nav-item" onclick="goToCard(1)">
+        <span class="nav-num">P1</span>
+        <span>空间采样：体素哈希与梯度分箱</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(2)">
+        <span class="nav-num">P2</span>
+        <span>3DGS 数学定义与 EWA 投影</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(3)">
+        <span class="nav-num">P3</span>
+        <span>辐射累积、Sigmoid 与 Gamma 校正</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(4)">
+        <span class="nav-num">P4</span>
+        <span>360° 球面轨道旋转与深度排序</span>
+      </div>
+
+      <div class="nav-group-title" style="margin-top: 10px;">第二部分：工程技术问答 (Q&amp;A)</div>
+      <div class="nav-item" onclick="goToCard(5)">
+        <span class="nav-num">Q1</span>
+        <span>拍照采样：传统 Mesh vs 3DGS</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(6)">
+        <span class="nav-num">Q2</span>
+        <span>端侧秒级重建 vs 离线稠密训练</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(7)">
+        <span class="nav-num">Q3</span>
+        <span>标准 3DGS PLY 色彩与透明度还原</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(8)">
+        <span class="nav-num">Q4</span>
+        <span>拍照质检毫秒级 (&lt;5ms) 优化方案</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(9)">
+        <span class="nav-num">Q5</span>
+        <span>角度与目标偏移实时监测机制</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(10)">
+        <span class="nav-num">Q6</span>
+        <span>状态隔离与实拍照片机位对齐</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(11)">
+        <span class="nav-num">Q7</span>
+        <span>十万级高斯球 60FPS 与内存控制</span>
+      </div>
+      <div class="nav-item" onclick="goToCard(12)">
+        <span class="nav-num">Q8</span>
+        <span>无权限相册保存与 SAF PLY 导出</span>
+      </div>
+    </aside>
+
+    <!-- 右侧主面板 -->
+    <main>
+
+      <!-- ── Card 0: 三大实机运行演示 ── -->
+      <section class="topic-card active">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>🎬 实机运行全链路演示</h2>
+            <div class="card-subtitle">涵盖「单体采集与端侧质量门禁」、「36 单元半球穹顶引导」与「外部 3DGS PLY 导入 60FPS 交互」</div>
+          </div>
+          <span class="badge">Live Demo</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 核心流程说明</div>
+          <div class="summary-text">
+            以下三段真机录屏展示了完整端到端链路：1. 单体模式下通过拉普拉斯方差评估清晰度、实时监测主体偏移并完成端侧几何重建；2. 36 单元立体半球穹顶雷达实时引导补齐俯仰角与水平扇区；3. 导入外部标准 3DGS PLY 模型，在深色高对比度视口中实现 60 FPS 的 360° 轨道旋转、缩放与相册导出。
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="demo-gif-card">
+            <img src="../assets/单体拍摄与校验.gif" alt="单体拍摄与校验">
+            <h4>1. 单体拍摄与画质校验</h4>
+            <p>Pro 参数锁定 · 拉普拉斯模糊检测 · 主体一致性追踪 · 照片机位对齐</p>
+          </div>
+          <div class="demo-gif-card">
+            <img src="../assets/3D三维36拍摄.gif" alt="3D三维36拍摄">
+            <h4>2. 36 单元空间穹顶 360° 采集</h4>
+            <p>3 层俯仰角 × 12 经度扇区半球雷达 · ARCore 实时点云叠加</p>
+          </div>
+          <div class="demo-gif-card">
+            <img src="../assets/ply导入展示.gif" alt="ply导入展示">
+            <h4>3. 外部 PLY 导入与 360° 交互</h4>
+            <p>二进制/ASCII 3DGS 解析 · 60FPS 轨道旋转 · 一键存相册</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 1: 空间采样原理 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>原理 P1：空间采样算法体系（体素哈希、泊松盘与梯度分箱）</h2>
+            <div class="card-subtitle">对应源码：<span class="file-ref">PhotoReconstructor.kt</span> <span class="file-ref">SurfaceMesher.kt</span> <span class="file-ref">UniversalPlyLoader.kt</span></div>
+          </div>
+          <span class="badge">Sampling Theory</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 原理概述</div>
+          <div class="summary-text">
+            采样层采用三级策略：前端基于 Sobel 梯度执行 2,500 边缘点 + 3,500 表面点的分箱采样，兼顾几何边界与内部连续色彩；中端通过三维体素空间哈希合并重复点并滤除离群噪点；后端在加载外部大型 PLY 模型时采用自适应步长流式采样，将显存顶点数量控制在移动端安全阈值内。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. 梯度显著性与分箱配额采样 (Gradient Binning)</h3>
+            <p>利用二维 Sobel 算子计算图像亮度梯度幅值 $M(x,y) = \sqrt{G_x^2 + G_y^2}$，平衡边缘特征与内部表面采样：</p>
+            <div class="dark-box">
+<span class="comment">// PhotoReconstructor.extractFeatures 分箱配额</span>
+<span class="hl">val</span> edgeFeatures = features.filter { it.strength > 0.35f }
+<span class="hl">val</span> surfaceFeatures = features.filter { it.strength &lt;= 0.35f }
+
+<span class="comment">// 刚性轮廓配额 2,500 点 + 内部表面均匀填充 3,500 点</span>
+<span class="hl">val</span> selectedEdges = edgeFeatures.sortedByDescending { it.strength }.take(2500)
+<span class="hl">val</span> selectedSurfaces = surfaceFeatures.shuffled().take(6000 - selectedEdges.size)
+            </div>
+          </div>
+
+          <div class="sub-panel">
+            <h3>2. 体素网格空间哈希下采样 (Voxel Grid Hashing)</h3>
+            <p>将连续空间 $\mathbb{R}^3$ 划分为边长 $v_{\text{size}} = 0.045\text{m}$ 的体素立方体，通过大素数异或哈希或 64 位移位键实现 $O(1)$ 聚类降噪：</p>
+            <div class="dark-box">
+<span class="comment">// 离散体素坐标映射与质心聚合</span>
+<span class="math">i = floor(x / v_size), j = floor(y / v_size), k = floor(z / v_size)</span>
+<span class="math">H(i,j,k) = (i * 73856093) ^ (j * 19349663) ^ (k * 83492791)</span>
+<span class="comment">// 同体素内所有采样点求几何质心与色彩均值，滤除孤立噪点</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>3. 泊松盘均匀表面约束 (Poisson Disk)</h3>
+            <p>在生成单体模型表面高斯椭球时，约束任意两椭球中心欧氏距离 $\|p_i - p_j\|_2 \ge r_{\min}$，符合蓝噪声频谱分布，避免椭球过密导致的深度闪烁或过疏导致的表面缝隙。</p>
+          </div>
+          <div class="sub-panel">
+            <h3>4. 自适应步长流式采样 (Adaptive Stride)</h3>
+            <p>解析外部百万级 PLY 文件时，按安全上限 $N_{\max} = 50,000$ 动态计算步长 $\text{stride} = \lceil N / N_{\max} \rceil$，边读取字节流边抽样，内存峰值恒定低于 $160\text{MB}$。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 2: 3DGS 数学定义与 EWA 投影 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>原理 P2：3D 高斯椭球参数化与 EWA 屏幕各向异性投影</h2>
+            <div class="card-subtitle">对应源码：<span class="file-ref">UniversalPlyLoader.kt</span> <span class="file-ref">GaussianRenderer.kt</span></div>
+          </div>
+          <span class="badge">3DGS Math</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 原理概述</div>
+          <div class="summary-text">
+            3DGS 的基本几何图元是具有三维尺度矩阵 $S$ 与四元数旋转矩阵 $R$ 的各向异性三维高斯椭球。渲染时基于 Zwicker EWA 算法将三维协方差矩阵投影至二维屏幕平面，在顶点着色器中沿椭球主轴方向拉伸椭圆面片以拟合物体连续表面。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. 三维协方差矩阵的正定分解</h3>
+            <p>三维高斯核定义为 $G(x) = \exp\left(-\frac{1}{2}(x-\mu)^T \Sigma^{-1} (x-\mu)\right)$。为保证协方差矩阵 $\Sigma$ 半正定，将其分解为旋转矩阵 $R$（由单位四元数 $q=(w,x,y,z)$ 构造）与对角尺度矩阵 $S = \text{diag}(s_x, s_y, s_z)$：</p>
+            <div class="dark-box">
+<span class="math">&Sigma; = R &middot; S &middot; S<sup>T</sup> &middot; R<sup>T</sup></span>
+<span class="comment">// PLY 文件中 scale 以对数存储，加载时通过指数还原物理尺寸：</span>
+<span class="hl">scaleX</span> = exp(raw_scale_0)
+<span class="hl">scaleY</span> = exp(raw_scale_1)
+<span class="hl">scaleZ</span> = exp(raw_scale_2)
+            </div>
+          </div>
+
+          <div class="sub-panel">
+            <h3>2. EWA Splatting 与球谐函数 (SH) 颜色采样</h3>
+            <p>给定视图变换 $W$ 与透视投影雅可比矩阵 $J$，屏幕二维投影协方差为 $\Sigma' = J W \Sigma W^T J^T$。零阶球谐基系数（`f_dc_0..2`）通过球面常数基 $Y_0^0 = \frac{1}{2\sqrt{\pi}} \approx 0.282095$ 还原漫反射基底色：</p>
+            <div class="dark-box">
+<span class="comment">// UniversalPlyLoader.kt 球谐零阶颜色解码</span>
+<span class="hl">val</span> SH_C0 = <span class="math">0.28209479f</span>
+<span class="hl">val</span> r = (0.5f + SH_C0 * f_dc_0).coerceIn(0f, 1f)
+<span class="hl">val</span> g = (0.5f + SH_C0 * f_dc_1).coerceIn(0f, 1f)
+<span class="hl">val</span> b = (0.5f + SH_C0 * f_dc_2).coerceIn(0f, 1f)
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 3: 体积混合、逆 Sigmoid 与 Gamma 校正 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>原理 P3：体积辐射度混合、逆 Sigmoid 解码与屏幕 Gamma 校正</h2>
+            <div class="card-subtitle">对应源码：<span class="file-ref">GaussianRenderer.kt (FS)</span> <span class="file-ref">UniversalPlyLoader.kt</span></div>
+          </div>
+          <span class="badge">Shader Physics</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 原理概述</div>
+          <div class="summary-text">
+            标准 3DGS PLY 文件中的 `opacity` 存储为逆 Sigmoid (Logit) 空间浮点数，加载时需执行标准 Sigmoid 激活还原；同时球谐函数计算出的颜色位于物理线性光度空间，片元着色器中通过 Gamma 1.85 转换与 1.28 倍饱和度补偿适配移动端 sRGB 屏幕。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. 不透明度逆 Sigmoid (Logit) 激活还原</h3>
+            <p>3DGS 训练时将 $\alpha \in (0,1)$ 存储为 $\text{logit}(\alpha) = \ln\frac{\alpha}{1-\alpha}$。解析时执行 Sigmoid 还原：</p>
+            <div class="dark-box">
+<span class="comment">// UniversalPlyLoader.kt</span>
+<span class="math">&alpha; = 1.0f / (1.0f + exp(-raw_opacity))</span>
+            </div>
+          </div>
+
+          <div class="sub-panel">
+            <h3>2. 片元着色器 Gamma 空间转换与中心强化</h3>
+            <p>将物理线性辐射亮度转换为屏幕 sRGB 空间，并通过 `smoothstep` 强化高斯中心不透明度：</p>
+            <div class="dark-box">
+<span class="comment">// GaussianRenderer.kt 片元着色器 (FS)</span>
+<span class="hl">float</span> gaussian = exp(-2.2 * dot(vUV, vUV));
+<span class="hl">float</span> finalAlpha = clamp(vAlpha * gaussian, 0.0, 1.0);
+<span class="hl">float</span> gray = dot(vColor, vec3(0.299, 0.587, 0.114));
+vec3 col = mix(vec3(gray), vColor, <span class="math">1.28</span>); <span class="comment">// 饱和度+28%</span>
+col = pow(clamp(col, 0.0, 1.0), vec3(<span class="math">1.0 / 1.85</span>)); <span class="comment">// Gamma 校正</span>
+finalAlpha = smoothstep(0.06, 0.92, finalAlpha);
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 4: 360° 球面轨道旋转播放原理 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>原理 P4：360° 球面轨道旋转与实时视线深度重排序机制</h2>
+            <div class="card-subtitle">对应源码：<span class="file-ref">GaussianRenderer.kt</span> <span class="file-ref">SplatGLView.kt</span> <span class="file-ref">NativeSplatBridge.kt</span></div>
+          </div>
+          <span class="badge">360° Orbit &amp; Sort</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 原理概述</div>
+          <div class="summary-text">
+            360° 轨道旋转与自由环绕由四层机制协同实现：1. 加载时计算 AABB 包围盒将几何质心归零至 (0,0,0)；2. 保持模型顶点静止，驱动相机沿球面极坐标方程环绕运动；3. C++ NDK 层每帧按当前视线方向执行深度基数排序；4. 顶点着色器在裁剪空间展开 Billboard 面片。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. AABB 质心归零 + 球面极坐标轨道相机</h3>
+            <p>计算包围盒中心 $\mathbf{c} = \frac{\mathbf{p}_{\min}+\mathbf{p}_{\max}}{2}$ 并归一化至 $[-1,1]^3$。每帧由偏航角 $\theta_{\text{yaw}}$ 与俯仰角 $\phi_{\text{pitch}} \in [-1.45, 1.45]$ 计算相机坐标 $\mathbf{E}$：</p>
+            <div class="dark-box">
+<span class="comment">// 开启 360° 自动展台旋转</span>
+<span class="hl">if</span> (isAutoRotate) rotY += <span class="math">0.008f</span>
+
+eyeX = targetX + R * cos(rotX) * sin(rotY)
+eyeY = targetY + R * sin(rotX)
+eyeZ = targetZ + R * cos(rotX) * cos(rotY)
+Matrix.setLookAtM(viewMatrix, 0, eyeX, eyeY, eyeZ, targetX, targetY, targetZ, 0f, 1f, 0f)
+            </div>
+          </div>
+
+          <div class="sub-panel">
+            <h3>2. C++ NDK 视线深度重排序 + 裁剪空间 Billboard</h3>
+            <p>相机视角更新时，按当前视线方向重排所有高斯椭球的混合顺序并正对屏幕展开：</p>
+            <div class="dark-box">
+<span class="comment">// 1. C++ NDK 实时计算视线投影深度 z_i = (p_i - E) · lookDir 并执行基数排序</span>
+NativeSplatBridge.nativeUpdateCamera(eyeX, eyeY, eyeZ, lookDirX, lookDirY, lookDirZ)
+
+<span class="comment">// 2. 顶点着色器在裁剪空间 (clip.xy) 直接展开椭球</span>
+vec4 clip = uMVP * vec4(aCenter, 1.0);
+clip.xy += (aPos.x * aRx + aPos.y * aRy) * aSize * uBaseSize * max(clip.w, 0.001);
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 5 (Q1): 传统 Mesh vs 3DGS 采样差异 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q1：在拍照采样阶段，传统 Mesh 摄影测量与 3DGS 辐射场采样有什么区别？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">SpatialCaptureGuide.kt</span> <span class="file-ref">NativeProCameraController.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            传统 Mesh 采样面向刚性几何三角化，假设表面满足各向同性漫反射，排斥移动高光，但支持后期 UV 匀光修补与局部特写拼接；3DGS 采样面向连续体积辐射场，利用球谐函数拟合随视角变化的高光，支持陶瓷与金属反光材质，但对自动曝光波动高度敏感，且要求完整覆盖上、中、下三层半球视角。
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>采样对比维度</th>
+              <th>传统 Mesh 摄影测量 (SfM + MVS + UV 贴图)</th>
+              <th>3D Gaussian Splatting (3DGS 辐射场采样)</th>
+              <th>本项目工程实现</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. 高光与反光材质</strong></td>
+              <td><strong>排斥高光</strong>：高光随视角移动会导致立体匹配失败与网格破洞</td>
+              <td><strong>直接支持</strong>：利用球谐函数 (SH) 拟合随视角流动的高光，需多仰角采集光泽变化</td>
+              <td>内置高光模型支持；引导多仰角环绕采集</td>
+            </tr>
+            <tr>
+              <td><strong>2. 自动曝光 (AE) 波动</strong></td>
+              <td><strong>中度敏感</strong>：后期 UV 贴图烘焙可通过 Multi-band Blending 匀光修补接缝</td>
+              <td><strong>高度敏感</strong>：全图光度损失 ($L_1+\text{D-SSIM}$) 会把曝光明暗跳变拟合成空中悬浮噪点 (Floaters)</td>
+              <td><code>NativeProCameraController</code> 硬件级锁定 ISO、快门与白平衡</td>
+            </tr>
+            <tr>
+              <td><strong>3. 空间视角覆盖策略</strong></td>
+              <td><strong>局部重叠拼接</strong>：相邻图重叠 &gt;70%，支持近距离局部特写</td>
+              <td><strong>全局视锥交叉约束</strong>：需完整环绕覆盖上、中、下三层半球视角</td>
+              <td><code>SpatialCaptureGuide</code> 3 层俯仰角 × 12 扇区 = 36 单元穹顶雷达</td>
+            </tr>
+            <tr>
+              <td><strong>4. 毛发与薄片边缘</strong></td>
+              <td>泊松表面重建易将细微结构粘连或平滑滤除</td>
+              <td>依靠椭球拉伸与 $\alpha$ 渐变还原边缘细节，需补充切向掠射角采样</td>
+              <td>支持自由视角与连续视频流关键帧抽取 (<code>VideoKeyframeExtractor</code>)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ── Card 6 (Q2): 端侧稀疏点云 vs 云端稠密实体 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q2：为什么移动端本地秒级重建的模型偏稀疏，而离线训练的 3DGS 模型连续光滑？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">PhotoReconstructor.kt</span> <span class="file-ref">SurfaceMesher.kt</span> <span class="file-ref">UniversalPlyLoader.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            两者处于不同的计算层级：移动端本地重建在数秒内执行特征反投影与 SurfaceMesher 局部拓扑插值，用于无网环境下快速验证三维结构与采集完整度；离线 3DGS 训练在桌面级 GPU 上运行 COLMAP 后经历 30,000 轮反向传播迭代，对高斯球执行分裂、克隆与剪枝生成百万级椭球。本项目通过 UniversalPlyLoader 同时支持导入并 60 FPS 渲染离线训练的标准 PLY 模型。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. 手机端本地秒级重建（3.5s ~ 7.5s）</h3>
+            <ul>
+              <li><strong>定位</strong>：端侧即时几何重建与现场采集校验。</li>
+              <li><strong>过程</strong>：CPU 协程并发提取 Sobel 边缘与表面采样点 $\rightarrow$ 圆弧针孔反投影 $\rightarrow$ <code>SurfaceMesher</code> 体素滤波与重心插值致密化。</li>
+              <li><strong>特点</strong>：无需云端 GPU 服务器、零网络开销、数秒内输出三维点云。</li>
+            </ul>
+          </div>
+          <div class="sub-panel">
+            <h3>2. 桌面/云端 3DGS 完整训练（15 ~ 40 分钟）</h3>
+            <ul>
+              <li><strong>定位</strong>：高保真辐射场拟合（Inria 3DGS / Postshot / Nerfstudio）。</li>
+              <li><strong>过程</strong>：在独立显卡上执行 30,000 次可微光栅化与梯度反向传播，动态执行自适应密度控制（Splitting / Cloning / Pruning），生成 50 万~200 万个各向异性椭球。</li>
+              <li><strong>无缝衔接</strong>：通过 <code>UniversalPlyLoader</code> 支持直接导入并 60FPS 渲染标准 `.ply` 模型。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 7 (Q3): 为什么色彩暗淡发灰及如何解决 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q3：为什么标准 3DGS PLY 模型直接渲染会出现色彩暗淡发灰或半透明？如何还原？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">GaussianRenderer.kt</span> <span class="file-ref">UniversalPlyLoader.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            3DGS 模型需经过辐射度体积合成（Radiance Compositing）管线还原：1. 标准 PLY 中的 opacity 为 logit 值，需经 Sigmoid 激活函数还原物理不透明度；2. 球谐系数输出为物理线性光度，需在片元着色器中执行 Gamma 1.85 转换与 28% 饱和度补偿以适配 sRGB 屏幕；3. 3D 渲染视口采用独立深黑背景（#06101E）提升浅色模型边缘对比度。
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="sub-panel">
+            <h3>1. 体积辐射累积合成</h3>
+            <p>按从前向后体积累积公式 $C = \sum c_i \alpha_i \prod (1-\alpha_j)$ 逐层叠加，并对 `raw_opacity` 执行 Sigmoid 激活还原。</p>
+          </div>
+          <div class="sub-panel">
+            <h3>2. 线性空间转 sRGB Gamma</h3>
+            <p>球谐颜色位于 Linear Space，片元着色器通过 <code>pow(col, 1.0/1.85)</code> 与 <code>mix(gray, col, 1.28)</code> 还原屏幕色彩。</p>
+          </div>
+          <div class="sub-panel">
+            <h3>3. 深色 3D 视口对比</h3>
+            <p>3D 展示区域保持 <code>#06101E</code> 深色背景，使浅色与半透明边界清晰锐利。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 8 (Q4): 拍照确认延迟 1.5s 根因与毫秒级优化 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q4：拍照确认与端侧质检是如何从 0.8s~1.8s 优化至毫秒级（&lt; 5ms）的？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">MainActivity.kt</span> <span class="file-ref">ImageQualityEvaluator.kt</span> <span class="file-ref">TargetTrackerEngine.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            早期延迟源于主线程全尺寸原图（12MP~48MP）解码旋转重压缩、单次拍照重复解码 3 次以及逐像素调用 Bitmap.getPixel() JNI 方法。优化后采用：1. ResolutionSelector(1280×960) 限制采集尺寸；2. Dispatchers.Default 后台协程单次 360px 下采样解码并在内存复用；3. Bitmap.getPixels() 批量读入 IntArray 配合单趟在线方差公式计算，将单帧质检耗时降至 5ms 以内。
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>优化维度</th>
+              <th>优化前实现（总耗时 800ms ~ 1800ms）</th>
+              <th>优化后原生实现（总耗时 &lt; 30ms，质检 &lt; 5ms）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. 原图 EXIF 旋转处理</strong></td>
+              <td>主线程同步解码 12MP~48MP 全尺寸原图、旋转矩阵并重压缩 JPEG 覆写磁盘（500~1500ms）</td>
+              <td>移除原图重压缩覆写，改在 <code>Dispatchers.Default</code> 后台协程执行内存级旋转</td>
+            </tr>
+            <tr>
+              <td><strong>2. 磁盘 I/O 解码次数</strong></td>
+              <td>单次拍照对同一文件连续调用 3 次 <code>BitmapFactory.decodeFile</code></td>
+              <td>通过 <code>decodeBitmapWithExif(file, maxSide=360)</code> 仅执行 <strong>1 次</strong>下采样解码并内存复用</td>
+            </tr>
+            <tr>
+              <td><strong>3. 像素遍历与方差算子</strong></td>
+              <td>双层循环逐点调用 <code>bitmap.getPixel(x,y)</code> + <code>MutableList&lt;Float&gt;</code> 装箱</td>
+              <td><code>bitmap.getPixels()</code> 一次性读入 <code>IntArray</code>，基于 $\text{Var}(X)=E[X^2]-(E[X])^2$ 单趟计算（&lt; 5ms）</td>
+            </tr>
+            <tr>
+              <td><strong>4. 采集分辨率与模式隔离</strong></td>
+              <td>默认最高像素输出；未区分空间模式与单体模式</td>
+              <td>配置 <code>ResolutionSelector(1280×960)</code>；仅在 <code>ScanMode.OBJECT</code> 模式下启用主体偏离校验</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ── Card 9 (Q5): 实时角度与目标偏移监测 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q5：如何在不按快门拍照的情况下，实时监测并更新相机角度与目标偏移状态？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">TargetTrackerEngine.kt</span> <span class="file-ref">SpatialCaptureGuide.kt</span> <span class="file-ref">MainActivity.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            1. 在 CameraX 管线中接入低分辨率 ImageAnalysis (320×240, STRATEGY_KEEP_ONLY_LATEST)，每 180ms 调用 verifyRealtimePreview 实时比对预览帧中心 HSV 直方图与对焦物距，镜头移回目标后自动恢复 LOCKED 状态；2. 在 SpatialCaptureGuide 中采用 SensorManager.remapCoordinateSystem(AXIS_X, AXIS_Z) 消除竖屏握持时的 90° 俯仰万向节死锁，实现毫秒级姿态回调。
+          </div>
+        </div>
+
+        <div class="dark-box">
+<span class="comment">// SpatialCaptureGuide.kt - 消除竖屏万向节死锁 (Gimbal Lock)</span>
+<span class="hl">if</span> (abs(rotationMatrix[7]) > 0.5f) {
+    SensorManager.remapCoordinateSystem(rotationMatrix, SensorManager.AXIS_X, SensorManager.AXIS_Z, remapped)
+    SensorManager.getOrientation(remapped, orientationAngles)
+}
+<span class="hl">val</span> pitch = Math.toDegrees(asin(rotationMatrix[8].toDouble().coerceIn(-1.0, 1.0))).toFloat()
+<span class="hl">val</span> roll = Math.toDegrees(asin(rotationMatrix[6].toDouble().coerceIn(-1.0, 1.0))).toFloat()
+        </div>
+      </section>
+
+      <!-- ── Card 10 (Q6): 状态隔离与照片机位对齐 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q6：点击实拍缩略图自动对齐 3D 相机机位是如何实现的？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">MainActivity.kt</span> <span class="file-ref">GaussianRenderer.alignCameraToPhoto</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            当在查看器底部点击第 i 张实拍照片时，渲染器根据环绕圆弧插值公式反向计算拍摄该张照片时的偏航角与俯仰角，驱动 Orbit 轨道相机旋转至对应的物理拍摄机位，便于比对实拍图像与 3D 模型的几何一致性。
+          </div>
+        </div>
+
+        <div class="dark-box">
+<span class="comment">// GaussianRenderer.kt - alignCameraToPhoto(photoIndex, totalPhotos)</span>
+<span class="hl">val</span> arcAngle = <span class="hl">if</span> (totalPhotos >= 20) 2 * PI.toFloat() <span class="hl">else</span> PI.toFloat() * 0.8f
+<span class="hl">val</span> t = photoIndex.toFloat() / max(1, totalPhotos - 1)
+<span class="hl">val</span> angle = -arcAngle / 2f + t * arcAngle
+
+rotY = angle
+rotX = <span class="math">0.15f + 0.10f * sin(t * PI.toFloat())</span>
+        </div>
+      </section>
+
+      <!-- ── Card 11 (Q7): 60FPS 渲染与防 OOM ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q7：移动端如何在有限内存与算力下实现十万级椭球的 60 FPS 渲染并避免 OOM？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">UniversalPlyLoader.kt</span> <span class="file-ref">GaussianRenderer.kt</span> <span class="file-ref">NativeSplatBridge.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            通过四层机制保障：1. 读取大型二进制 PLY 时使用 64KB BufferedInputStream 按自适应步长流式抽样；2. 顶点缓冲直接分配在 Native DirectByteBuffer，零拷贝上传至 OpenGL VBO；3. 景深排序在 C++ NDK 层使用基数排序完成，规避 JVM GC 停顿；4. Compose AndroidView.update 仅更新标量与 Uniform，仅在数据源变化时通过 LaunchedEffect 上传 VBO。
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="sub-panel">
+            <h3>1. 内存控制：流式解析 + DirectBuffer</h3>
+            <ul>
+              <li><strong>流式读取</strong>：<code>UniversalPlyLoader</code> 支持 ASCII 与 <code>binary_little_endian</code>，仅实例化满足 <code>i % sampleStep == 0</code> 的顶点。</li>
+              <li><strong>零拷贝显存上传</strong>：<code>ByteBuffer.allocateDirect(splatCount * 6 * 56)</code> 直接对接 OpenGL VBO。</li>
+            </ul>
+          </div>
+          <div class="sub-panel">
+            <h3>2. 帧率保障：C++ 基数排序 + 动态尺寸缩放</h3>
+            <ul>
+              <li><strong>C++ NDK 排序</strong>：避免在每帧 16.6ms 渲染周期内触发 JVM 垃圾回收。</li>
+              <li><strong>视距自适应 Splat 半径</strong>：顶点着色器动态计算 <code>dynamicSize = baseFactor / sqrt(zoom)</code>。</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Card 12 (Q8): 无权限相册保存与 PLY 导出 ── -->
+      <section class="topic-card">
+        <div class="card-header">
+          <div class="card-title-wrap">
+            <h2>Q8：如何实现无权限将 OpenGL 3D 画面保存至系统相册，以及导出标准 PLY 文件？</h2>
+            <div class="card-subtitle">涉及模块：<span class="file-ref">MediaStoreSaver.kt</span> <span class="file-ref">PlyExporter.kt</span> <span class="file-ref">GaussianRenderer.kt</span></div>
+          </div>
+          <span class="badge badge-qa">技术问答 Q&amp;A</span>
+        </div>
+
+        <div class="summary-box">
+          <div class="summary-label">📌 A：核心解答</div>
+          <div class="summary-text">
+            遵循 Android 分区存储规范（Scoped Storage）：1. 保存相册时，在 GL 渲染线程帧末调用 glReadPixels 抓取显存 RGBA 缓冲，使用 postScale(1f, -1f) 翻转校正 OpenGL 左下角原点与 Android Bitmap 左上角原点的坐标差异，再通过 MediaStore 写入 Pictures/Remy3D；2. 导出 PLY 时，通过系统 SAF 框架（CreateDocument）流式输出标准 PLY 文件。
+          </div>
+        </div>
+
+        <div class="dark-box">
+<span class="comment">// GaussianRenderer.kt 帧末显存抓取与垂直镜像翻转</span>
+GLES20.glReadPixels(0, 0, w, h, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf)
+<span class="hl">val</span> rawBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+rawBmp.copyPixelsFromBuffer(pixelBuf.rewind())
+<span class="comment">// OpenGL 原点位于左下角，Android Bitmap 原点位于左上角，执行 Y 轴镜像翻转</span>
+<span class="hl">val</span> matrix = AndroidMatrix().apply { postScale(1f, -1f) }
+<span class="hl">val</span> flippedBmp = Bitmap.createBitmap(rawBmp, 0, 0, w, h, matrix, <span class="hl">true</span>)
+MediaStoreSaver.saveBitmapToGallery(context, flippedBmp)
+        </div>
+      </section>
+
+      <!-- 底部翻页条 -->
+      <div class="footer-bar" id="footer-bar">
+        <button class="nav-btn" id="btn-prev" onclick="stepCard(-1)">← 上一节</button>
+        <span id="progress-text" style="font-size: 0.88rem; color: var(--muted); font-weight: 700;">1 / 13</span>
+        <button class="nav-btn" id="btn-next" onclick="stepCard(1)">下一节 →</button>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    const cards = document.querySelectorAll('.topic-card');
+    const navItems = document.querySelectorAll('.nav-item');
+    const progressText = document.getElementById('progress-text');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    const footerBar = document.getElementById('footer-bar');
+    let currentIdx = 0;
+    let currentMode = 'slide';
+
+    function updateUI() {
+      cards.forEach((c, i) => c.classList.toggle('active', i === currentIdx));
+      navItems.forEach((n, i) => n.classList.toggle('active', i === currentIdx));
+      progressText.textContent = `${currentIdx + 1} / ${cards.length}`;
+      btnPrev.disabled = currentIdx === 0;
+      btnNext.disabled = currentIdx === cards.length - 1;
+    }
+
+    function goToCard(idx) {
+      currentIdx = idx;
+      updateUI();
+      if (currentMode === 'overview') {
+        cards[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function stepCard(delta) {
+      const next = currentIdx + delta;
+      if (next >= 0 && next < cards.length) {
+        goToCard(next);
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.body.classList.toggle('overview-mode', mode === 'overview');
+      document.getElementById('btn-slide-mode').classList.toggle('active', mode === 'slide');
+      document.getElementById('btn-overview-mode').classList.toggle('active', mode === 'overview');
+      footerBar.style.display = mode === 'slide' ? 'flex' : 'none';
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (currentMode !== 'slide') return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        stepCard(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        stepCard(-1);
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>

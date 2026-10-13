@@ -1,0 +1,41 @@
+name: Publish Release & APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Create GitHub Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name == 'main' && 'v0.2.0' || github.ref_name }}
+          name: "Remy3D-Android v0.2.0 (3DGS 端侧渲染与立体环绕采集演示版)"
+          body: |
+            ## 📦 Remy3D-Android v0.2.0 正式体验包
+
+            ### ✨ 核心特性
+            1. **专业相机参数锁定 (`NativeProCameraController`)**：支持手动锁定 ISO、快门速度、屈光度微距对焦与白平衡，保持多视角辐射一致性。
+            2. **36 单元立体穹顶引导 (`SpatialCaptureGuide`)**：3 层俯仰角 × 12 经度扇区半球雷达，实时引导环绕补盲。
+            3. **实时模糊与主体偏移监测 (`ImageQualityEvaluator` & `TargetTrackerEngine`)**：相机预览流实时监测目标色相直方图与物距一致性，偏移矫正后即刻恢复状态；支持毫秒级拉普拉斯方差模糊拦截。
+            4. **端侧快速反投影与 3DGS 渲染 (`PhotoReconstructor` & `GaussianRenderer`)**：Sobel 分箱特征提取 + `SurfaceMesher` 曲面插值 + C++17 NDK 视线深度基数排序 + OpenGL ES 2.0 60FPS 交互渲染。
+            5. **内置 6 款 3DGS 预设与通用 PLY 导入 (`UniversalPlyLoader`)**：支持流式导入外部 ASCII / Binary Little-Endian 标准 3DGS `.ply` 模型，支持无权限一键保存模型渲染图至系统相册。
+
+            ### 📲 安装说明
+            下载下方 **Assets** 中的 **`Remy3D-v0.2.0-release.apk`**（16.1 MB）传输至 Android 手机直接安装即可体验。
+          files: |
+            release/Remy3D-v0.2.0-release.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
